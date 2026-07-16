@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>決定分析 8ステップ 実践学習アプリ</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --ink:#1f2937; --sub:#6b7280;
+    --accent:#2563eb; --accent-light:#dbeafe; --ok:#059669; --ng:#dc2626;
+    --warn:#d97706; --border:#e5e7eb; --must:#fee2e2; --want:#fef3c7;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; background:var(--bg); color:var(--ink); font-size:15px; line-height:1.7;}
+  .layout{display:flex; min-height:100vh;}
+  /* sidebar */
+  .sidebar{width:250px; background:#111827; color:#e5e7eb; padding:20px 0; flex-shrink:0; position:sticky; top:0; height:100vh; overflow-y:auto;}
+  .sidebar h1{font-size:15px; padding:0 18px 14px; border-bottom:1px solid #374151; line-height:1.5;}
+  .sidebar h1 small{display:block; font-size:11px; color:#9ca3af; font-weight:normal;}
+  .navitem{display:flex; align-items:center; gap:10px; padding:10px 18px; cursor:pointer; font-size:13px; border-left:3px solid transparent;}
+  .navitem:hover{background:#1f2937;}
+  .navitem.active{background:#1f2937; border-left-color:var(--accent); color:#fff;}
+  .navitem .badge{width:22px; height:22px; border-radius:50%; background:#374151; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;}
+  .navitem.done .badge{background:var(--ok); color:#fff;}
+  .sidebar .tools{padding:14px 18px; border-top:1px solid #374151; margin-top:10px;}
+  .sidebar .tools button{width:100%; margin-bottom:8px; background:#374151; color:#e5e7eb; border:none; padding:8px; border-radius:6px; cursor:pointer; font-size:12px;}
+  .sidebar .tools button:hover{background:#4b5563;}
+  /* main */
+  .main{flex:1; padding:32px 40px; max-width:960px;}
+  .stepheader{margin-bottom:18px;}
+  .stepheader .steplabel{display:inline-block; background:var(--accent); color:#fff; font-size:12px; font-weight:bold; padding:3px 12px; border-radius:99px; margin-bottom:6px;}
+  .stepheader h2{font-size:22px;}
+  .stepheader p.lead{color:var(--sub); font-size:14px; margin-top:4px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:18px;}
+  .card h3{font-size:15px; margin-bottom:12px; display:flex; align-items:center; gap:8px;}
+  .tag{font-size:11px; padding:2px 10px; border-radius:99px; font-weight:bold;}
+  .tag.work{background:var(--accent-light); color:var(--accent);}
+  .tag.learn{background:#ecfdf5; color:var(--ok);}
+  .tag.quiz{background:#fef3c7; color:var(--warn);}
+  label{display:block; font-size:13px; font-weight:bold; margin:12px 0 4px;}
+  input[type=text], textarea, select{width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; background:#fff;}
+  textarea{resize:vertical; min-height:64px;}
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--accent-light); border-color:var(--accent);}
+  .btn{background:var(--accent); color:#fff; border:none; padding:9px 18px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:bold;}
+  .btn:hover{opacity:.9;}
+  .btn.sub{background:#fff; color:var(--ink); border:1px solid var(--border);}
+  .btn.small{padding:5px 12px; font-size:12px;}
+  .btn.danger{background:#fff; color:var(--ng); border:1px solid #fecaca;}
+  .hint{background:#f9fafb; border-left:3px solid var(--accent); padding:10px 14px; font-size:13px; color:#374151; border-radius:0 8px 8px 0; margin:10px 0;}
+  /* list items */
+  .item-row{display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px dashed var(--border);}
+  .item-row:last-child{border-bottom:none;}
+  .item-row .txt{flex:1;}
+  .pill{font-size:11px; font-weight:bold; padding:3px 10px; border-radius:99px; cursor:pointer; border:1px solid var(--border); background:#fff; color:var(--sub);}
+  .pill.must-on{background:var(--ng); color:#fff; border-color:var(--ng);}
+  .pill.want-on{background:var(--warn); color:#fff; border-color:var(--warn);}
+  .pill.drop-on{background:#6b7280; color:#fff; border-color:#6b7280;}
+  /* explain accordion */
+  details.explain{border:1px solid var(--border); border-radius:12px; background:#f0fdf4; margin-bottom:18px; overflow:hidden;}
+  details.explain summary{padding:14px 22px; cursor:pointer; font-weight:bold; font-size:14px; list-style:none; display:flex; align-items:center; gap:8px;}
+  details.explain summary::-webkit-details-marker{display:none;}
+  details.explain summary::after{content:"▼"; margin-left:auto; font-size:10px; color:var(--sub); transition:transform .2s;}
+  details.explain[open] summary::after{transform:rotate(180deg);}
+  details.explain .body{padding:0 22px 18px; font-size:14px;}
+  details.explain .body p{margin-bottom:10px;}
+  details.explain .body ul{margin:0 0 10px 20px;}
+  details.explain .body li{margin-bottom:4px;}
+  .keyword{background:#fff; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px; margin:10px 0; font-size:13px;}
+  .keyword b{color:var(--ok);}
+  /* quiz */
+  .quiz-q{font-weight:bold; margin-bottom:10px;}
+  .quiz-opt{display:block; padding:10px 14px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer; font-size:14px; background:#fff;}
+  .quiz-opt:hover{border-color:var(--accent);}
+  .quiz-opt.correct{border-color:var(--ok); background:#ecfdf5;}
+  .quiz-opt.wrong{border-color:var(--ng); background:#fef2f2;}
+  .quiz-fb{font-size:13px; padding:10px 14px; border-radius:8px; margin-top:6px; display:none;}
+  .quiz-fb.ok{display:block; background:#ecfdf5; color:var(--ok);}
+  .quiz-fb.ng{display:block; background:#fef2f2; color:var(--ng);}
+  /* tables */
+  table{border-collapse:collapse; width:100%; font-size:13px; background:#fff;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:center; vertical-align:middle;}
+  th{background:#f9fafb; font-size:12px;}
+  td.left,th.left{text-align:left;}
+  .best{background:#ecfdf5 !important; font-weight:bold;}
+  .ngcell{background:#fef2f2; color:var(--ng); font-weight:bold;}
+  .score-total{font-size:15px; font-weight:bold; color:var(--accent);}
+  .navbtns{display:flex; justify-content:space-between; margin-top:24px;}
+  .flowbox{display:flex; flex-direction:column; gap:6px; margin:14px 0;}
+  .flowstep{display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px 16px; cursor:pointer;}
+  .flowstep:hover{border-color:var(--accent);}
+  .flowstep .n{background:var(--accent); color:#fff; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; flex-shrink:0;}
+  .flowstep .t{font-weight:bold; font-size:14px;}
+  .flowstep .d{font-size:12px; color:var(--sub);}
+  .arrow-down{text-align:center; color:#9ca3af; font-size:12px; line-height:1;}
+  .progress-note{font-size:12px; color:var(--sub); margin-top:6px;}
+  .empty{color:var(--sub); font-size:13px; padding:10px 0;}
+  @media print{
+    .sidebar,.no-print,details.explain,.navbtns{display:none !important;}
+    .main{padding:0; max-width:100%;}
+    body{background:#fff;}
+    .card{border:1px solid #ccc; break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h1>決定分析 8ステップ<small>実践して学ぶ 意思決定トレーニング</small></h1>
+    <div id="nav"></div>
+    <div class="tools no-print">
+      <button onclick="exportJSON()">💾 データを書き出す</button>
+      <button onclick="document.getElementById('importFile').click()">📂 データを読み込む</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+      <button onclick="resetAll()">🗑 最初からやり直す</button>
+    </div>
+  </nav>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+/* ================= state ================= */
+const STORAGE_KEY = "decision8_v1";
+let state = {
+  page: 0,
+  purpose: "", matter: "",
+  conditions: [],          // {id, text, cls:'must'|'want'|'drop'|null, weight:5, mustChecks:[false,false,false]}
+  candidates: [],          // {id, name, note}
+  mustPass: {},            // candId -> {condId: 'pass'|'fail'|''}
+  wantScores: {},          // candId -> {condId: 1..10}
+  risks: [],               // {id, candId, desc, prob, impact, counter}
+  finalChoice: "", finalReason: "",
+  quiz: {},                // qid -> chosen index
+  visited: {0:true}
+};
+let uid = 1;
+function newId(){ return "i" + (uid++) + "_" + Date.now().toString(36); }
+
+function save(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ state = Object.assign(state, JSON.parse(raw)); }
+  }catch(e){}
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "決定分析ワーク.json";
+  a.click();
+}
+function importJSON(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => { try{ state = JSON.parse(r.result); save(); render(); }catch(e){ alert("読み込みに失敗しました"); } };
+  r.readAsText(f);
+}
+function resetAll(){
+  if(confirm("入力した内容をすべて消去して最初からやり直しますか？")){
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    location.reload();
+  }
+}
+function esc(s){ return (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ================= step meta ================= */
+const STEPS = [
+  {title:"はじめに", short:"ガイド"},
+  {title:"決定目的と決定事項を明確にする", short:"STEP1 目的の明確化"},
+  {title:"目標・条件を列挙する", short:"STEP2 条件の列挙"},
+  {title:"目標・条件を分類する（MUST / WANT）", short:"STEP3 MUST/WANT分類"},
+  {title:"WANTのウェイトづけをする", short:"STEP4 ウェイトづけ"},
+  {title:"候補案を起案する", short:"STEP5 候補案の起案"},
+  {title:"候補案を評価する", short:"STEP6 候補案の評価"},
+  {title:"マイナス要素を検討する", short:"STEP7 マイナス検討"},
+  {title:"最終決定をする", short:"STEP8 最終決定"},
+  {title:"結果サマリー", short:"📋 結果サマリー"}
+];
+
+function stepDone(i){
+  switch(i){
+    case 1: return state.purpose.trim() && state.matter.trim();
+    case 2: return state.conditions.length >= 3;
+    case 3: return state.conditions.length>0 && state.conditions.every(c=>c.cls);
+    case 4: return wants().length>0 && wants().every(c=>c.weight>=1);
+    case 5: return state.candidates.length >= 2;
+    case 6: return state.candidates.length>0 && passers().length>0 && passers().every(cd => wants().every(w => (state.wantScores[cd.id]||{})[w.id]));
+    case 7: return state.risks.length >= 1;
+    case 8: return state.finalChoice.trim() && state.finalReason.trim();
+    default: return false;
+  }
+}
+function wants(){ return state.conditions.filter(c=>c.cls==="want"); }
+function musts(){ return state.conditions.filter(c=>c.cls==="must"); }
+function passers(){
+  return state.candidates.filter(cd => musts().every(m => (state.mustPass[cd.id]||{})[m.id] === "pass"));
+}
+function totalScore(candId){
+  let t = 0;
+  wants().forEach(w => { const s = (state.wantScores[candId]||{})[w.id]; if(s) t += w.weight * s; });
+  return t;
+}
+
+/* ================= quiz ================= */
+const QUIZZES = {
+  1:{q:"決定の課題設定が大きすぎたり不明確なまま分析を始めると、どうなりやすい？",
+     opts:["細部まで一気に決まり効率的になる","話が総論的になり、具体的な解決策にたどり着けない","候補案が自動的に増える"],
+     ans:1, fb:"課題が大きすぎると議論が抽象的になります。「何のために・何を決めるのか」を先に絞り込むことが第一歩です。"},
+  2:{q:"列挙する「目標・条件」に含めるべき2つの要素は？",
+     opts:["実現したい成果と、投入できる経営資源（制約条件）","競合の動向と、自社の歴史","決定者の好みと、過去の慣例"],
+     ans:0, fb:"「この決定で得たい成果」と「使えるヒト・モノ・カネ・時間などの制約」の両面から狙いを出し尽くします。"},
+  3:{q:"MUST（必須条件）が満たすべき3つの要件は？",
+     opts:["理想的・抽象的・柔軟","絶対的・計量可能・現実的","主観的・感覚的・暫定的"],
+     ans:1, fb:"MUSTは①絶対に譲れない、②数値などで判定できる、③現実的にクリア可能、の3要件を満たすものだけに絞ります。判定できない願望はWANTへ。"},
+  4:{q:"ウェイトづけを丁寧に行う一番のメリットは？",
+     opts:["候補案の数を減らせる","何を重視するかが明確になり、関係者の合意形成がスムーズになる","MUSTが不要になる"],
+     ans:1, fb:"重みを先に合意しておくと、後の評価や説明がぶれません。結論が出た後の「何か釈然としない」もウェイトの見直しで解消できます。"},
+  5:{q:"よい候補案がなかなか出ないとき、有効なアプローチは？",
+     opts:["最初に思いついた案で即決する","決定目的やMUST・WANTをガイドにして、目的から発想し直す","候補案づくりを省略する"],
+     ans:1, fb:"案とは目的達成の手段。目的から発想すれば方法は複数出てきます。過去の経験や先行事例も参考になります。"},
+  6:{q:"MUSTを1つでもクリアできない候補案の扱いは？",
+     opts:["WANTの点数が高ければ採用してよい","その時点でNG（対象から外す）","ウェイトを下げて残す"],
+     ans:1, fb:"MUSTは絶対条件。1つでも満たせない案はWANT評価に進む前に落とします。だからこそMUSTの設定は慎重に。"},
+  7:{q:"プラス面の評価とマイナス面（リスク）の検討はどう進めるのがよい？",
+     opts:["同時にごちゃまぜで議論する","分けて行う（先にプラス評価、その後にリスク検討）","マイナス面は見ない"],
+     ans:1, fb:"強み・弱みを同時に議論すると頭が混乱します。プラス評価とマイナス検討を分けることで、冷静で整理された判断ができます。"},
+  8:{q:"分析結果と自分の直観が食い違ったとき、まずすべきことは？",
+     opts:["必ず直観に従う","必ず分析結果に従う","評価項目・ウェイト・採点に見落としがないか見直し、再評価してから決断する"],
+     ans:2, fb:"直観とのズレは見直しのシグナル。ヌケやモレを確認し、それでも妥当なら分析結果を受け入れ、思い込みが原因なら修正します。"}
+};
+function quizHTML(step){
+  const q = QUIZZES[step]; if(!q) return "";
+  const chosen = state.quiz[step];
+  let opts = q.opts.map((o,i)=>{
+    let cls = "quiz-opt";
+    if(chosen !== undefined){
+      if(i === q.ans) cls += " correct";
+      else if(i === chosen) cls += " wrong";
+    }
+    return `<div class="${cls}" onclick="answerQuiz(${step},${i})">${esc(o)}</div>`;
+  }).join("");
+  let fb = "";
+  if(chosen !== undefined){
+    const ok = chosen === q.ans;
+    fb = `<div class="quiz-fb ${ok?'ok':'ng'}">${ok?"⭕ 正解！":"❌ 不正解。"} ${esc(q.fb)}</div>`;
+  }
+  return `<div class="card"><h3><span class="tag quiz">確認クイズ</span>理解度チェック</h3>
+    <div class="quiz-q">${esc(q.q)}</div>${opts}${fb}</div>`;
+}
+function answerQuiz(step,i){ state.quiz[step]=i; save(); render(); }
+
+/* ================= nav ================= */
+function go(p){ state.page = p; state.visited[p]=true; save(); render(); window.scrollTo(0,0); }
+function navHTML(){
+  return STEPS.map((s,i)=>{
+    const done = i>=1 && i<=8 && stepDone(i);
+    const badge = i===0 ? "🏠" : (i===9 ? "📋" : (done ? "✓" : i));
+    return `<div class="navitem ${state.page===i?'active':''} ${done?'done':''}" onclick="go(${i})">
+      <span class="badge">${badge}</span><span>${esc(s.short)}</span></div>`;
+  }).join("");
+}
+function navBtns(i){
+  const prev = i>0 ? `<button class="btn sub" onclick="go(${i-1})">← 前へ</button>` : "<span></span>";
+  const next = i<9 ? `<button class="btn" onclick="go(${i+1})">次へ →</button>` : "<span></span>";
+  return `<div class="navbtns no-print">${prev}${next}</div>`;
+}
+
+/* ================= pages ================= */
+function pageHome(){
+  const flow = STEPS.slice(1,9).map((s,idx)=>{
+    const i = idx+1;
+    return `<div class="flowstep" onclick="go(${i})"><span class="n">${i}</span>
+      <div><div class="t">${esc(s.title)}</div></div>
+      <span style="margin-left:auto;color:${stepDone(i)?'var(--ok)':'#d1d5db'}">${stepDone(i)?"✓ 完了":"未完了"}</span></div>`
+      + (i<8 ? `<div class="arrow-down">▼</div>` : "");
+  }).join("");
+  return `
+  <div class="stepheader"><h2>実践して身につける「決定分析」</h2>
+  <p class="lead">自分のリアルな課題を題材に、8つのステップを順に進めながら合理的な意思決定の手順を体で覚えるアプリです。</p></div>
+  <div class="card">
+    <h3>このアプリの使い方</h3>
+    <p>① まず<b>自分が今まさに決めたいこと</b>（仕事でもプライベートでも可）を1つ用意してください。<br>
+    ② 各ステップで<b>先にワーク（実践）</b>に取り組み、その後「解説で学ぶ」を開いて考え方を確認します。<br>
+    ③ 最後に確認クイズで理解度をチェック。全ステップを終えると<b>結果サマリー</b>で決定の全体像が1枚にまとまり、印刷して報告資料にも使えます。</p>
+    <div class="hint">💡 なぜ実践が先か？ ── 自分の課題で手を動かしてから解説を読むと、「なるほど、ここでつまずくのか」が実感でき、記憶に残りやすくなります。</div>
+  </div>
+  <div class="card"><h3>なぜこの手順が必要か</h3>
+    <p>人は何かを決めるとき、深く考えずに結論を急いだり、気に入った案を「総合的に考えて」という曖昧な理由で選びがちです。しかしこれからの意思決定には、<b>なぜその結論になったのかを理路整然と説明できる力（アカウンタビリティ）</b>が強く求められます。8つのステップは、その説明可能な結論をスピーディに導くための型です。</p>
+  </div>
+  <div class="card"><h3>8つのステップ</h3><div class="flowbox">${flow}</div></div>
+  ${navBtns(0)}`;
+}
+
+function pageStep1(){
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 1</span><h2>決定目的と決定事項を明確にする</h2>
+  <p class="lead">まずはワークから。「何のために・何を決めるのか」を言葉にしてみましょう。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク</span>あなたの決定課題を書き出す</h3>
+    <label>決定目的（何のために決めるのか？）</label>
+    <input type="text" id="purpose" value="${esc(state.purpose)}" placeholder="例：○○商品の市場シェアを拡大するため" onchange="state.purpose=this.value;save();render()">
+    <label>決定事項（何を決めるのか？）</label>
+    <input type="text" id="matter" value="${esc(state.matter)}" placeholder="例：最適な販売促進策の選定" onchange="state.matter=this.value;save();render()">
+    <div class="hint">💡 書き方のコツ：「（目的）のための（決定事項）の選定」という1文にできれば合格です。<br>
+    → <b>${esc(state.purpose)||"（目的）"}のための${esc(state.matter)||"（決定事項）"}</b></div>
+  </div>
+  <details class="explain"><summary>📖 解説で学ぶ：なぜ目的の明確化が最初なのか</summary><div class="body">
+    <p>「決定」は突然現れるものではなく、必ず前段階の何らかの状況や決定から「今回の決定」の必要性が生まれています。だからこそ、着手前に<b>決定目的</b>（何のために）と<b>決定事項</b>(何を決めるのか)をセットで明文化することが最初のステップになります。</p>
+    <ul>
+      <li>課題が<b>大きすぎる・曖昧なまま</b>だと、話があちこちに飛び、総論的な議論で終わってしまいます。</li>
+      <li>逆に大きな課題は<b>いくつかの決定事項に分けて</b>分析すればスムーズに進みます。「急がば回れ」で、課題の見定めには慎重さが必要です。</li>
+      <li>売上を伸ばしたい、という漠然とした思いも「○○のための△△の選定」という形に落とすと分析可能になります。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>決定目的 ／ 決定事項 ／ 課題の見定め</div>
+  </div></details>
+  ${quizHTML(1)}
+  ${navBtns(1)}`;
+}
+
+function pageStep2(){
+  const rows = state.conditions.map(c=>`
+    <div class="item-row">
+      <span class="txt">${esc(c.text)}</span>
+      <button class="btn small danger" onclick="delCond('${c.id}')">削除</button>
+    </div>`).join("") || `<div class="empty">まだ条件がありません。下の欄から追加してください。</div>`;
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 2</span><h2>目標・条件を列挙する</h2>
+  <p class="lead">この決定で「実現したいこと」「守るべき制約」を思いつく限り書き出します。目安は5個以上。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク</span>狙いを出し尽くす（現在 ${state.conditions.length} 件）</h3>
+    ${rows}
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <input type="text" id="newCond" placeholder="例：費用は○○円以内 ／ 納期は△月まで ／ できるだけ□□がよい" onkeydown="if(event.key==='Enter')addCond()">
+      <button class="btn" onclick="addCond()">追加</button>
+    </div>
+    <div class="hint">💡 2つの視点で出すと漏れにくい：<br>① この決定で<b>実現したい成果・期待</b>（〜を達成したい、〜であってほしい）<br>② 投入できる<b>経営資源＝制約条件</b>（予算、期限、人員、スペースなど「〜以内」「〜まで」）</div>
+  </div>
+  <details class="explain"><summary>📖 解説で学ぶ：狙いを先に固める理由</summary><div class="body">
+    <p>候補案の比較に入る前に「そもそも何を狙っての決定か」を確認しておかないと、結論が出るまでに時間がかかったり、決めた後に不満が残ったりします。</p>
+    <ul>
+      <li>目標・条件とは、換言すれば<b>決定の狙い</b>。①実施によって実現したい成果と、②投入可能な経営資源（制約条件）の2つを意味します。</li>
+      <li>ここで列挙したものが、後のステップで候補案を<b>比較評価する基準</b>になります。</li>
+      <li>候補案が複数ある場合、先に評価基準を明確にしてから評価に移ると、関係者の合意も得やすく、納得のいく結論を導けます。</li>
+      <li>「支出は○円まで」のような上限もあれば「できるだけ少なく」のような期待もあります。この違いは次のSTEP3で整理するので、まずは<b>質より量</b>でどんどん出しましょう。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>目標・条件 ／ 実現したい成果 ／ 経営資源（制約条件） ／ 評価基準</div>
+  </div></details>
+  ${quizHTML(2)}
+  ${navBtns(2)}`;
+}
+function addCond(){
+  const el = document.getElementById("newCond");
+  const v = el.value.trim(); if(!v) return;
+  state.conditions.push({id:newId(), text:v, cls:null, weight:5});
+  save(); render();
+  setTimeout(()=>{ const e=document.getElementById("newCond"); if(e) e.focus(); },0);
+}
+function delCond(id){
+  state.conditions = state.conditions.filter(c=>c.id!==id);
+  save(); render();
+}
+
+function pageStep3(){
+  const rows = state.conditions.map(c=>`
+    <div class="item-row">
+      <span class="txt">${esc(c.text)}</span>
+      <span class="pill ${c.cls==='must'?'must-on':''}" onclick="setCls('${c.id}','must')">MUST 必須</span>
+      <span class="pill ${c.cls==='want'?'want-on':''}" onclick="setCls('${c.id}','want')">WANT 希望</span>
+      <span class="pill ${c.cls==='drop'?'drop-on':''}" onclick="setCls('${c.id}','drop')">対象外</span>
+    </div>`).join("") || `<div class="empty">STEP2で条件を追加してください。</div>`;
+  const mustList = musts().map(c=>`<li>${esc(c.text)}</li>`).join("");
+  const mustCheck = musts().length ? `
+    <div class="hint">🔍 <b>MUST妥当性チェック</b> ── 選んだMUSTは次の3要件をすべて満たしていますか？<br>
+    ① <b>絶対的</b>（必須・必達。譲れない）　② <b>計量可能</b>（数値などで客観的に判定できる）　③ <b>現実的</b>（クリア可能な水準）<br>
+    満たさないもの（「できるだけ〜」など判定できない願望）はWANTに戻しましょう。<ul>${mustList}</ul></div>` : "";
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 3</span><h2>目標・条件を分類する</h2>
+  <p class="lead">列挙した条件を「絶対に確保したいMUST」と「できるだけ満たしたいWANT」に仕分けます。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク</span>MUST / WANT に仕分ける</h3>
+    ${rows}${mustCheck}
+  </div>
+  <details class="explain"><summary>📖 解説で学ぶ：MUSTとWANTの違い</summary><div class="body">
+    <p><b>MUST（必須目標・条件）</b>は必要条件・前提条件・絶対条件とも呼ばれ、絶対に確保したいもの。<b>WANT（十分目標・条件）</b>は十分条件・相対条件・希望条件とも呼ばれ、できるだけ満足を得たいものです。</p>
+    <ul>
+      <li>MUSTの3要件：①<b>絶対的</b>（必須・必達）、②<b>計量可能</b>（数値化できる）、③<b>現実的</b>。この3つを満たすものだけがMUSTです。</li>
+      <li>MUSTの役割は、最低条件をクリアしない候補を<b>最初の段階でふるい落とし</b>、検討のムダをなくすこと。例：住宅購入なら「予算○○万円以内」「○月までに入居」「3LDK以上」など。</li>
+      <li>絶対に譲れない条件がオーバーしている案は、他がどんなに魅力的でも落とすことになります。</li>
+      <li>WANTは「できるだけ広く」「できるだけ近く」のように<b>定性的</b>に表現されるもの。どれがより満足度が高いかを<b>相対比較</b>する基準になります。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>MUST（必須目標・条件） ／ WANT（十分目標・条件） ／ 絶対的・計量可能・現実的</div>
+  </div></details>
+  ${quizHTML(3)}
+  ${navBtns(3)}`;
+}
+function setCls(id, cls){
+  const c = state.conditions.find(x=>x.id===id);
+  if(c){ c.cls = (c.cls===cls? null : cls); save(); render(); }
+}
+
+function pageStep4(){
+  const ws = wants();
+  const rows = ws.map(c=>`
+    <div class="item-row">
+      <span class="txt">${esc(c.text)}</span>
+      <select onchange="setWeight('${c.id}',this.value)" style="width:90px;">
+        ${[10,9,8,7,6,5,4,3,2,1].map(n=>`<option value="${n}" ${c.weight==n?"selected":""}>${n}</option>`).join("")}
+      </select>
+    </div>`).join("") || `<div class="empty">WANTに分類された条件がありません。STEP3で分類してください。</div>`;
+  const sorted = [...ws].sort((a,b)=>b.weight-a.weight);
+  const ranked = sorted.length ? `<div class="hint">📊 <b>重要度順：</b>${sorted.map(c=>`${esc(c.text)}（${c.weight}）`).join(" ＞ ")}<br>この並びは、あなたの重視するものを正しく表していますか？違和感があれば調整を。</div>` : "";
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 4</span><h2>WANTのウェイトづけをする</h2>
+  <p class="lead">WANT項目に重要度の重み（10〜1点）をつけます。一番重視するものを10点に。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク</span>重みをつける</h3>
+    ${rows}${ranked}
+    <div class="hint">💡 項目が多くて迷うときは、まずA（重要度・非常に高い）／B（普通）／C（それほどでない）の3ランクに分け、A=10〜8、B=7〜4、C=3〜1の範囲で点をつけると決めやすくなります。</div>
+  </div>
+  <details class="explain"><summary>📖 解説で学ぶ：ウェイトづけの意味</summary><div class="body">
+    <p>WANT項目には重要度の差があるはずです。一番重視するものを10点とし、それとの相対比較で10〜1の範囲で重みをつけ、<b>軽重を明らかに</b>します。</p>
+    <ul>
+      <li>例えば住宅購入で「費用をできるだけ抑えたい」思いが強ければそこに高いウェイトがつき、子どもの学校や買い物の便を重視するならそちらのウェイトが高くなります。</li>
+      <li>結論が出てから釈然としない、というモヤモヤは、ウェイトづけの粗さに起因することが多い。<b>何に重きを置くか</b>を先に決めておくことが納得感の鍵です。</li>
+      <li>複数人での決定では、ウェイトについて<b>十分話し合って合意を得ておく</b>と、その後の議論が格段にスムーズになります。</li>
+      <li>評価項目が多い場合はA・B・Cの3ランクに分けてから数値化する便法が有効です。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>ウェイトづけ ／ 相対比較 ／ 合意形成</div>
+  </div></details>
+  ${quizHTML(4)}
+  ${navBtns(4)}`;
+}
+function setWeight(id,v){
+  const c = state.conditions.find(x=>x.id===id);
+  if(c){ c.weight = Number(v); save(); render(); }
+}
+
+function pageStep5(){
+  const rows = state.candidates.map(c=>`
+    <div class="item-row">
+      <div class="txt"><b>${esc(c.name)}</b>${c.note?`<div style="font-size:12px;color:var(--sub)">${esc(c.note)}</div>`:""}</div>
+      <button class="btn small danger" onclick="delCand('${c.id}')">削除</button>
+    </div>`).join("") || `<div class="empty">まだ候補案がありません。2つ以上あげましょう。</div>`;
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 5</span><h2>候補案を起案する</h2>
+  <p class="lead">比較する候補案を2つ以上あげます。すでにある案の確認でも、新しく考え出してもOK。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク</span>候補案を出す（現在 ${state.candidates.length} 件）</h3>
+    ${rows}
+    <label>案の名前</label>
+    <input type="text" id="candName" placeholder="例：A案 SNS広告キャンペーン">
+    <label>概要メモ（任意）</label>
+    <input type="text" id="candNote" placeholder="例：若年層向け。初期費用は小さいが運用の手間がかかる" onkeydown="if(event.key==='Enter')addCand()">
+    <div style="margin-top:12px;"><button class="btn" onclick="addCand()">候補案を追加</button></div>
+    <div class="hint">💡 案が出ないときのヒント：目的から発想し直す／過去の経験・知識をたどる／他社・他部門の先行事例を参考にする／STEP2〜3で挙げたMUST・WANTを「こういう条件を満たす方法は？」という発想のガイドにする。</div>
+  </div>
+  <details class="explain"><summary>📖 解説で学ぶ：案は目的達成の手段</summary><div class="body">
+    <p>評価基準（MUST・WANT・ウェイト）が確定したら、次はそれで評価する候補案を揃えます。すでに複数案があればすぐ評価へ。なければ<b>案をつくり出す</b>必要があります。</p>
+    <ul>
+      <li>案とは<b>目的達成のための手段</b>であり、手段は通常、複数存在します。山頂に登るルートが複数あるように、目的から発想すれば方法はいくつも出てくるはずです。</li>
+      <li>私たちはあまり複数発想をしない傾向がありますが、1案だけで決めると比較ができず、決定の質も説明力も下がります。</li>
+      <li>決定目的やMUST・WANTの項目は、案を考え出す際の<b>ガイドの役割</b>も果たします。じっくりにらんで「どうしたらこれを満たせるか」を考えてみましょう。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>候補案 ／ 複数発想 ／ 目的からの発想</div>
+  </div></details>
+  ${quizHTML(5)}
+  ${navBtns(5)}`;
+}
+function addCand(){
+  const n = document.getElementById("candName").value.trim();
+  const m = document.getElementById("candNote").value.trim();
+  if(!n) return;
+  state.candidates.push({id:newId(), name:n, note:m});
+  save(); render();
+}
+function delCand(id){
+  state.candidates = state.candidates.filter(c=>c.id!==id);
+  delete state.mustPass[id]; delete state.wantScores[id];
+  state.risks = state.risks.filter(r=>r.candId!==id);
+  save(); render();
+}
+
+function pageStep6(){
+  if(!state.candidates.length || !state.conditions.some(c=>c.cls)){
+    return `<div class="stepheader"><span class="steplabel">STEP 6</span><h2>候補案を評価する</h2></div>
+    <div class="card"><div class="empty">先にSTEP3（分類）とSTEP5（候補案）を完了してください。</div></div>${navBtns(6)}`;
+  }
+  /* MUST table */
+  let mustTable = "";
+  if(musts().length){
+    mustTable = `<table><tr><th class="left">MUST（必須条件）</th>${state.candidates.map(c=>`<th>${esc(c.name)}</th>`).join("")}</tr>` +
+      musts().map(m=>`<tr><td class="left">${esc(m.text)}</td>` +
+        state.candidates.map(cd=>{
+          const v = (state.mustPass[cd.id]||{})[m.id] || "";
+          return `<td><select onchange="setMust('${cd.id}','${m.id}',this.value)">
+            <option value="">－</option>
+            <option value="pass" ${v==="pass"?"selected":""}>○ クリア</option>
+            <option value="fail" ${v==="fail"?"selected":""}>× NG</option>
+          </select></td>`;
+        }).join("") + "</tr>").join("") +
+      `<tr><th class="left">判定</th>${state.candidates.map(cd=>{
+        const ok = musts().every(m=>(state.mustPass[cd.id]||{})[m.id]==="pass");
+        const anyFail = musts().some(m=>(state.mustPass[cd.id]||{})[m.id]==="fail");
+        return `<td class="${anyFail?'ngcell':''}">${anyFail?"NG（除外）": ok?"通過 ✓":"未判定"}</td>`;
+      }).join("")}</tr></table>`;
+  } else {
+    mustTable = `<div class="empty">MUSTがない場合はそのままWANT評価へ進みます。</div>`;
+  }
+  /* WANT table */
+  const ps = musts().length ? passers() : state.candidates;
+  let wantTable = "";
+  if(ps.length && wants().length){
+    wantTable = `<table><tr><th class="left">WANT（ウェイト）</th>${ps.map(c=>`<th colspan="2">${esc(c.name)}</th>`).join("")}</tr>
+    <tr><th class="left"></th>${ps.map(()=>"<th>点(10-1)</th><th>W×点</th>").join("")}</tr>` +
+    wants().map(w=>`<tr><td class="left">${esc(w.text)}（${w.weight}）</td>` +
+      ps.map(cd=>{
+        const s = (state.wantScores[cd.id]||{})[w.id] || "";
+        return `<td><select onchange="setScore('${cd.id}','${w.id}',this.value)">
+          <option value="">－</option>${[10,9,8,7,6,5,4,3,2,1].map(n=>`<option value="${n}" ${s==n?"selected":""}>${n}</option>`).join("")}
+        </select></td><td>${s? w.weight*s : "－"}</td>`;
+      }).join("") + "</tr>").join("");
+    const totals = ps.map(cd=>totalScore(cd.id));
+    const max = Math.max(...totals);
+    wantTable += `<tr><th class="left">合計点</th>${ps.map((cd,i)=>
+      `<td colspan="2" class="score-total ${totals[i]===max && totals[i]>0 ?'best':''}">${totals[i]}${totals[i]===max&&totals[i]>0?" 🏆":""}</td>`).join("")}</tr></table>`;
+    if(max>0){
+      const best = ps[totals.indexOf(max)];
+      wantTable += `<div class="hint">🏆 現時点の最高得点は <b>${esc(best.name)}</b>（${max}点）。これを<b>仮決定</b>とし、STEP7でマイナス面を検討します。</div>`;
+    }
+  } else if(!wants().length){
+    wantTable = `<div class="empty">WANTがありません。STEP3で分類してください。</div>`;
+  } else {
+    wantTable = `<div class="empty">MUSTを通過した案がまだありません。上の表で判定を入力してください。</div>`;
+  }
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 6</span><h2>候補案を評価する</h2>
+  <p class="lead">①MUSTのクリア判定 → ②通過案をWANTで採点。合計点が自動計算されます。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク①</span>MUSTチェック（1つでも×なら除外）</h3>${mustTable}</div>
+  <div class="card"><h3><span class="tag work">実践ワーク②</span>WANT採点（項目ごとに一番良い案を10点として相対比較）</h3>${wantTable}</div>
+  <details class="explain"><summary>📖 解説で学ぶ：二段階評価のしくみ</summary><div class="body">
+    <ul>
+      <li>まず各案がMUSTをクリアしているかをチェックし、<b>1つでもクリアできない案はNG</b>にせざるを得ません。</li>
+      <li>次にMUSTをクリアした案だけをWANT項目で比較評価します。項目ごとに、満足度が一番高い案に10点をつけ、それとの<b>相対比較</b>で他の案に10〜1点をつけます。</li>
+      <li>各項目の得点にウェイトを掛け合わせ、その積を合計した評価点で比較し、<b>一番高得点の案を最適案と仮決定</b>します。</li>
+      <li>点数化することで「なんとなく良さそう」ではなく、どの項目がどれだけ効いたのかを後から説明できます。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>MUSTチェック ／ 相対評価 ／ ウェイト×得点 ／ 仮決定</div>
+  </div></details>
+  ${quizHTML(6)}
+  ${navBtns(6)}`;
+}
+function setMust(candId,condId,v){
+  state.mustPass[candId] = state.mustPass[candId]||{};
+  state.mustPass[candId][condId]=v; save(); render();
+}
+function setScore(candId,condId,v){
+  state.wantScores[candId] = state.wantScores[candId]||{};
+  state.wantScores[candId][condId]=Number(v)||""; save(); render();
+}
+
+function pageStep7(){
+  const ps = musts().length ? passers() : state.candidates;
+  const candOpts = ps.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  const rows = state.risks.map(r=>{
+    const cd = state.candidates.find(c=>c.id===r.candId);
+    return `<tr>
+      <td class="left">${cd?esc(cd.name):"－"}</td>
+      <td class="left">${esc(r.desc)}</td>
+      <td>${esc(r.prob)}</td><td>${esc(r.impact)}</td>
+      <td class="left">${esc(r.counter)||"－"}</td>
+      <td><button class="btn small danger" onclick="delRisk('${r.id}')">削除</button></td></tr>`;
+  }).join("");
+  const table = state.risks.length ? `<table><tr><th>対象案</th><th>起こりうるマイナス要素</th><th>発生確率</th><th>影響度</th><th>対策・軽減策</th><th></th></tr>${rows}</table>` : `<div class="empty">仮決定した案について「もし実施したら、どんなマイナスが起こりうるか」を最低1つ書き出しましょう。</div>`;
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 7</span><h2>マイナス要素を検討する</h2>
+  <p class="lead">ここまでの評価はプラス面。今度は採用予定案の「実施したら何がまずいか」を洗い出します。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク</span>リスクの洗い出しと対策</h3>
+    ${table}
+    <label>対象案</label><select id="riskCand">${candOpts||"<option>候補案がありません</option>"}</select>
+    <label>起こりうるマイナス要素（リスク）</label>
+    <input type="text" id="riskDesc" placeholder="例：運用担当者の負荷が想定以上に増える">
+    <div style="display:flex;gap:12px;">
+      <div style="flex:1;"><label>発生確率</label><select id="riskProb"><option>高</option><option selected>中</option><option>低</option></select></div>
+      <div style="flex:1;"><label>影響度</label><select id="riskImpact"><option>高</option><option selected>中</option><option>低</option></select></div>
+    </div>
+    <label>対策・軽減策</label>
+    <input type="text" id="riskCounter" placeholder="例：外部パートナーに一部委託し月次でレビューする" onkeydown="if(event.key==='Enter')addRisk()">
+    <div style="margin-top:12px;"><button class="btn" onclick="addRisk()">リスクを追加</button></div>
+    <div class="hint">⚠️ 発生確率も影響度も「高」のリスクは要注意。対策で抑えられないなら、次点の案を再検討する材料になります。</div>
+  </div>
+  <details class="explain"><summary>📖 解説で学ぶ：なぜプラスとマイナスを分けるのか</summary><div class="body">
+    <ul>
+      <li>マイナス要素の検討とは、採用しようとする案を<b>実施に移したらどんなまずいことが起こりうるか</b>を予測することです。</li>
+      <li>予測した各マイナス要素について、<b>発生確率</b>と、発生したときの決定目的実現への<b>影響度</b>を評価します。</li>
+      <li>確率・影響度が非常に高いものには、発生確率を抑える対策や、発生時の影響を軽減する対策がないかを検討し、その結果リスクがどう変わるかを確認します。</li>
+      <li>多少のリスクは承知で決定することはありますが、そのリスクが<b>容認できるものか</b>を確認するのがこのステップです。</li>
+      <li>案の強みと弱みを同時に議論すると頭が混乱します。<b>プラス面の評価とマイナス面の検討は分けて行う</b>ほうが、混乱を回避できてベターです。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>マイナス要素 ／ 発生確率×影響度 ／ 対策・軽減策</div>
+  </div></details>
+  ${quizHTML(7)}
+  ${navBtns(7)}`;
+}
+function addRisk(){
+  const candId = document.getElementById("riskCand").value;
+  const desc = document.getElementById("riskDesc").value.trim();
+  if(!desc || !candId) return;
+  state.risks.push({id:newId(), candId,
+    desc, prob:document.getElementById("riskProb").value,
+    impact:document.getElementById("riskImpact").value,
+    counter:document.getElementById("riskCounter").value.trim()});
+  save(); render();
+}
+function delRisk(id){ state.risks = state.risks.filter(r=>r.id!==id); save(); render(); }
+
+function pageStep8(){
+  const ps = musts().length ? passers() : state.candidates;
+  const totals = ps.map(c=>({c, t:totalScore(c.id)}));
+  totals.sort((a,b)=>b.t-a.t);
+  const summary = totals.length ? `<div class="hint">📊 <b>評価点の順位：</b>${totals.map((x,i)=>`${i+1}位 ${esc(x.c.name)}（${x.t}点）`).join(" ／ ")}<br>⚠️ 登録済みリスク：${state.risks.length}件</div>` : "";
+  return `
+  <div class="stepheader"><span class="steplabel">STEP 8</span><h2>最終決定をする</h2>
+  <p class="lead">プラス面（評価点）とマイナス面（リスク）の両面をみて、最もバランスのとれた案を選び、理由を言葉にします。</p></div>
+  <div class="card"><h3><span class="tag work">実践ワーク</span>決断と理由の言語化</h3>
+    ${summary}
+    <label>最終決定する案</label>
+    <input type="text" id="finalChoice" value="${esc(state.finalChoice)}" placeholder="例：A案 SNS広告キャンペーン" onchange="state.finalChoice=this.value;save();render()">
+    <label>決定理由（なぜこの案か、他人に説明するつもりで）</label>
+    <textarea id="finalReason" placeholder="例：MUSTをすべて満たしたうえで評価点が最高。最大のリスクである運用負荷も委託で軽減可能と判断したため。" onchange="state.finalReason=this.value;save();render()">${esc(state.finalReason)}</textarea>
+    <div class="hint">🧭 <b>最終チェック</b>：分析結果と自分の直観は一致していますか？ 食い違うなら、評価項目のヌケ・モレ、ウェイトの妥当性、採点の根拠をもう一度見直してから決断を。見直しても分析が妥当なら、直観のほうの思い込みを疑いましょう。</div>
+  </div>
+  <details class="explain"><summary>📖 解説で学ぶ：最終決断の作法</summary><div class="body">
+    <ul>
+      <li>評価基準に基づくプラス面の評価と、致命傷になるようなマイナス面がないかの慎重な考察を経て、最後の最終決定となります。</li>
+      <li>案の評価をじっくり考察したうえで、プラス・マイナスの両面からみて<b>最もバランスのとれた案</b>を採用します。どんな決定でも何らかの意味で妥協を含む、最良の妥協に到達するという考え方で決断します。</li>
+      <li>どうしても納得がいかない場合はもう一度、評価項目やWANTのウェイトが適切だったかを確認し、不適当なら修正して<b>再評価してから</b>決定を下します。</li>
+      <li>この8ステップを踏むことで、なぜその結論になったのかを理路整然と説明でき、<b>アカウンタビリティ</b>を果たせます。手順は販売促進策、取引先や購入先の選定、機械・レイアウトの選定、人選など広範な問題に適用できます。</li>
+    </ul>
+    <div class="keyword"><b>キーワード：</b>最良の妥協 ／ 直観との突き合わせ ／ アカウンタビリティ</div>
+  </div></details>
+  ${quizHTML(8)}
+  ${navBtns(8)}`;
+}
+
+function pageSummary(){
+  const ps = musts().length ? passers() : state.candidates;
+  const totals = ps.map(c=>({c,t:totalScore(c.id)})).sort((a,b)=>b.t-a.t);
+  const condRows = state.conditions.filter(c=>c.cls==="must"||c.cls==="want").map(c=>
+    `<tr><td>${c.cls==="must"?"<b style='color:var(--ng)'>MUST</b>":"WANT"}</td><td class="left">${esc(c.text)}</td><td>${c.cls==="want"?c.weight:"－"}</td></tr>`).join("");
+  const scoreRows = totals.map((x,i)=>`<tr class="${i===0&&x.t>0?'best':''}"><td>${i+1}</td><td class="left">${esc(x.c.name)}</td><td>${x.t}</td></tr>`).join("");
+  const riskRows = state.risks.map(r=>{
+    const cd = state.candidates.find(c=>c.id===r.candId);
+    return `<tr><td class="left">${cd?esc(cd.name):"－"}</td><td class="left">${esc(r.desc)}</td><td>${esc(r.prob)}</td><td>${esc(r.impact)}</td><td class="left">${esc(r.counter)||"－"}</td></tr>`;
+  }).join("");
+  const quizScore = Object.keys(QUIZZES).filter(k=>state.quiz[k]===QUIZZES[k].ans).length;
+  return `
+  <div class="stepheader"><h2>📋 決定分析 結果サマリー</h2>
+  <p class="lead">分析の全体像です。「印刷」でそのまま報告・共有資料になります。</p></div>
+  <div class="card"><h3>1. 決定目的と決定事項</h3>
+    <p><b>目的：</b>${esc(state.purpose)||"（未入力）"}<br><b>決定事項：</b>${esc(state.matter)||"（未入力）"}</p></div>
+  <div class="card"><h3>2. 評価基準（MUST / WANT / ウェイト）</h3>
+    ${condRows?`<table><tr><th>区分</th><th>目標・条件</th><th>ウェイト</th></tr>${condRows}</table>`:`<div class="empty">未入力</div>`}</div>
+  <div class="card"><h3>3. 候補案の評価結果</h3>
+    ${scoreRows?`<table><tr><th>順位</th><th>候補案（MUST通過）</th><th>合計点</th></tr>${scoreRows}</table>`:`<div class="empty">未評価</div>`}</div>
+  <div class="card"><h3>4. マイナス要素と対策</h3>
+    ${riskRows?`<table><tr><th>対象案</th><th>リスク</th><th>確率</th><th>影響度</th><th>対策</th></tr>${riskRows}</table>`:`<div class="empty">未入力</div>`}</div>
+  <div class="card"><h3>5. 最終決定</h3>
+    <p><b>決定：</b>${esc(state.finalChoice)||"（未入力）"}<br><b>理由：</b>${esc(state.finalReason)||"（未入力）"}</p></div>
+  <div class="card no-print"><h3>学習の記録</h3>
+    <p>確認クイズ正解数：<b>${quizScore} / 8</b>　完了ステップ：<b>${[1,2,3,4,5,6,7,8].filter(stepDone).length} / 8</b></p>
+    <p style="font-size:13px;color:var(--sub);">別の課題でもう一周すると型が定着します。「データを書き出す」で今回の記録を保存してから「最初からやり直す」を押してください。</p></div>
+  <div class="no-print" style="display:flex;gap:10px;">
+    <button class="btn" onclick="window.print()">🖨 印刷 / PDF保存</button>
+    <button class="btn sub" onclick="go(0)">🏠 ホームへ</button>
+  </div>`;
+}
+
+/* ================= render ================= */
+const PAGES = [pageHome,pageStep1,pageStep2,pageStep3,pageStep4,pageStep5,pageStep6,pageStep7,pageStep8,pageSummary];
+function render(){
+  document.getElementById("nav").innerHTML = navHTML();
+  document.getElementById("main").innerHTML = PAGES[state.page]();
+}
+load();
+render();
+</script>
+</body>
+</html>
